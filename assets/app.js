@@ -58,6 +58,7 @@ const ORDER = Object.keys(ST);
 const FINISH = new Set(["ТЗ", "КП", "Продажа"]);
 const stInfo = s => ST[s] || { c: "pot", g: "other", r: 0 };
 const chip = s => h("span", { class: "chip st-" + stInfo(s).c }, stInfo(s).label || s);
+const isWaiting = d => !!d.waiting && d.g !== "lost";
 
 /* ---------- расшифровка ---------- */
 async function decrypt(env, password) {
@@ -126,18 +127,73 @@ function renderHero() {
       h("span", { class: "k" }, k), h("b", null, String(v)), cv, h("span", { class: "bar-t" }, h("i", { style: `width:${s.n ? (v / s.n) * 100 : 0}%` }))));
   });
   // «сейчас» — без фильтра периода
-  const active = all.filter(d => d.g === "active"), waiting = all.filter(d => d.waiting && d.g !== "lost" && d.g !== "won");
+  const active = all.filter(d => d.g === "active"), waiting = all.filter(isWaiting);
   const stuck = active.filter(d => d.idle != null && d.idle > 7), soon = all.filter(d => d.meeting && d.meeting >= S.today && d.meeting <= addDays(S.today, 7) && !d.held);
   const money = all.filter(d => d.won && d.amount).reduce((a, d) => a + d.amount, 0);
   const now = $("#nowPills"); now.textContent = "";
   now.append(
     h("span", { class: "pill" }, "В работе сейчас: ", h("b", null, String(active.length))),
-    h("span", { class: "pill" + (waiting.length ? " alert" : "") }, "Ждут нашего ответа: ", h("b", null, String(waiting.length))),
+    h("a", { class: "pill" + (waiting.length ? " alert" : ""), href: "#reply" }, "Ждут нашего ответа: ", h("b", null, String(waiting.length))),
     h("span", { class: "pill" + (stuck.length ? " bad" : "") }, "Без движения больше недели: ", h("b", null, String(stuck.length))),
     h("span", { class: "pill good" }, "Встречи на 7 дней: ", h("b", null, String(soon.length))),
     ...(money ? [h("span", { class: "pill good" }, "Сумма договоров: ", h("b", null, "$" + money.toLocaleString("ru-RU")))] : []));
   const untracked = all.filter(d => !d.tracked).length;
   $("#heroNote").textContent = "Конверсия под числом — от предыдущего шага. " + (untracked ? `${untracked} ${plural(untracked, "карточка", "карточки", "карточек")} без даты первого касания в воронку не входят.` : "");
+}
+
+/* ---------- ждут нашего ответа (список на конец дня) ---------- */
+function waitInfo(d) {
+  if (d.idle == null) return { t: "—", c: "na", n: -1 };
+  if (d.idle === 0) return { t: "с сегодня", c: "new", n: 0 };
+  if (d.idle === 1) return { t: "со вчера", c: "warn", n: 1 };
+  return { t: d.idle + " " + plural(d.idle, "день", "дня", "дней"), c: d.idle <= 3 ? "warn" : "bad", n: d.idle };
+}
+function chatLink(d) {
+  const url = d.tgUrl || (d.group && /^https?:\/\/t\.me\//.test(d.group) ? d.group : null);
+  return url ? h("a", { class: "btn chat", href: url, target: "_blank", rel: "noopener" }, icon("telegram"), "Открыть чат")
+    : h("span", { class: "chat none" }, "нет ссылки на чат");
+}
+function replyText(list) {
+  const lines = list.map((d, i) => {
+    const w = waitInfo(d), url = d.tgUrl || d.group || "";
+    return `${i + 1}. ${d.name} — ждёт ${w.n <= 1 ? w.t.replace("с ", "").replace("со ", "") : w.t} — ${d.next || "уточнить, что ответить"}${url ? " — " + url : ""}`;
+  });
+  return [`Ждут нашего ответа · ${ddmm(S.today)} · ${list.length}`, ...lines].join("\n");
+}
+function renderReply() {
+  const box = $("#reply"); if (!box) return; box.textContent = "";
+  const list = S.data.deals.filter(isWaiting).sort((a, b) => (b.idle ?? -1) - (a.idle ?? -1) || a.name.localeCompare(b.name, "ru"));
+  const head = h("div", { class: "reply-h" },
+    h("span", { class: "app-icon ic-1" }, icon("bubble")),
+    h("div", { class: "reply-t" }, h("h3", { class: "h3", id: "replyTitle" }, "Ждут нашего ответа"),
+      h("p", { class: "card-sub" }, "Клиент написал последним или мы обещали вернуться с ответом — и ответа пока нет. Claude сверяет переписку с Telegram каждый день в 19:00.")),
+    h("span", { class: "count" + (list.length ? " hot" : "") }, String(list.length)));
+  box.append(head);
+  if (!list.length) { box.append(h("p", { class: "empty" }, icon("check"), "Все клиенты получили ответ. Новые вопросы появятся здесь после вечерней сверки с Telegram.")); return; }
+  const old = list.filter(d => (d.idle ?? 0) > 3).length, mid = list.filter(d => d.idle === 1 || d.idle === 2 || d.idle === 3).length, today = list.filter(d => d.idle === 0).length;
+  const copy = h("button", { class: "btn copy", type: "button" }, icon("check"), "Скопировать список");
+  copy.addEventListener("click", async () => {
+    const txt = replyText(list);
+    try { await navigator.clipboard.writeText(txt); copy.lastChild.textContent = "Скопировано"; }
+    catch (e) { const ta = h("textarea", { class: "copy-fallback", readonly: true }); ta.value = txt; box.append(ta); ta.select(); copy.lastChild.textContent = "Выделено — нажмите Ctrl+C"; }
+    setTimeout(() => { copy.lastChild.textContent = "Скопировать список"; }, 2500);
+  });
+  box.append(h("div", { class: "reply-bar" },
+    h("span", { class: "pill" + (old ? " bad" : "") }, "Больше 3 дней: ", h("b", null, String(old))),
+    h("span", { class: "pill" + (mid ? " warn" : "") }, "1–3 дня: ", h("b", null, String(mid))),
+    h("span", { class: "pill" }, "С сегодня: ", h("b", null, String(today))),
+    h("span", { class: "sp" }), copy));
+  const ul = h("ul", { class: "reply-list" });
+  list.forEach(d => {
+    const w = waitInfo(d);
+    ul.append(h("li", null,
+      h("div", { class: "who" }, dealLink(d), chip(d.status),
+        h("span", { class: "meta" }, [d.last ? "последнее сообщение " + dShort(d.last) : null, d.sector, d.region].filter(Boolean).join(" · "))),
+      h("p", { class: "what" }, d.next || "Что ответить, не записано — откройте чат."),
+      h("span", { class: "idle " + w.c }, w.t),
+      chatLink(d)));
+  });
+  box.append(ul, h("p", { class: "foot" }, "Ответили клиенту — отметка снимется сама при следующей сверке. Можно снять раньше: галочка «Ждёт нашего ответа» в карточке Notion."));
 }
 
 /* ---------- сигналы на сегодня ---------- */
@@ -167,7 +223,7 @@ const dealRow = (d, meta, right) => h("li", null, dealLink(d), right || idlePill
 function renderSignals() {
   const all = S.data.deals, box = $("#signals"); box.textContent = "";
   const byIdle = (a, b) => (b.idle ?? 0) - (a.idle ?? 0);
-  const waiting = all.filter(d => d.waiting && d.g !== "lost" && d.g !== "won").sort(byIdle);
+  const fresh = all.filter(d => d.first && d.first >= addDays(S.today, -2)).sort((a, b) => b.first.localeCompare(a.first));
   const finish = all.filter(d => FINISH.has(d.status)).sort(byIdle);
   const stuck = all.filter(d => d.held && d.g === "active" && !FINISH.has(d.status) && (d.idle ?? 0) > 7).sort(byIdle);
   const upcoming = all.filter(d => d.meeting && d.meeting >= S.today && !d.held && d.g !== "lost").sort((a, b) => a.meeting.localeCompare(b.meeting));
@@ -176,7 +232,8 @@ function renderSignals() {
   const unc = uncontacted();
 
   box.append(
-    sigCard({ icon: "bubble", tone: "ic-1", title: "Ждут нашего ответа", sub: "Клиент задал вопрос или ждёт материалы.", items: waiting, empty: "Никто не ждёт ответа.", row: d => dealRow(d) }),
+    sigCard({ icon: "sparkle", tone: "ic-4", title: "Новые лиды", sub: "Первое касание за последние 3 дня.", items: fresh, empty: "За 3 дня новых лидов не было.",
+      row: d => dealRow(d, [stInfo(d.status).label || d.status, d.sector, d.region].filter(Boolean).join(" · "), h("span", { class: "idle na" }, dShort(d.first))) }),
     sigCard({ icon: "trophy", tone: "ic-2", title: "Довести до договора", sub: "Статусы «ТЗ», «КП» и «Продажа».", items: finish, empty: "Сделок на этапе ТЗ или КП нет.", row: d => dealRow(d, `${d.status} · ${d.next || "следующий шаг не записан"}`) }),
     sigCard({ icon: "clock", tone: "ic-3", title: "Зависли после встречи", sub: "Встреча прошла, а движения нет больше недели.", items: stuck, empty: "После встреч всё движется.", row: d => dealRow(d) }),
     sigCard({ icon: "people", tone: "ic-7", title: "Встречи", sub: "Ближайшие по дате, затем те, где время не подтверждено.", items: [...upcoming, ...undated], empty: "Встреч не запланировано.",
@@ -223,7 +280,7 @@ function insightsList(rows) {
   if (sc.length) out.push(["Чаще всего до встречи доходит ", h("b", null, sc[0].k.toLowerCase()), `: ${sc[0].s.ms} ${plural(sc[0].s.ms, "встреча", "встречи", "встреч")} на ${sc[0].s.n} ${plural(sc[0].s.n, "компанию", "компании", "компаний")}.`]);
   if (s.mh >= 3 && s.pr / s.mh < 0.5)
     out.push(["Узкое место — шаг после встречи: из ", h("b", null, `${s.mh} проведённых встреч`), ` до ТЗ или КП дошли ${s.pr}. Отправляйте КП в течение 48 часов после встречи.`]);
-  const waiting = S.data.deals.filter(d => d.waiting && d.g !== "lost" && d.g !== "won").length;
+  const waiting = S.data.deals.filter(isWaiting).length;
   if (waiting) out.push([h("b", null, `${waiting} ${plural(waiting, "клиент ждёт", "клиента ждут", "клиентов ждут")} нашего ответа`), " — это самые тёплые сделки, начните день с них."]);
   return out;
 }
@@ -308,7 +365,7 @@ function renderReasons() {
 
 /* ---------- реестр ---------- */
 const FILTERS = [
-  ["active", "В работе", d => d.g === "active"], ["waiting", "Ждут ответа", d => d.waiting && d.g !== "lost" && d.g !== "won"],
+  ["active", "В работе", d => d.g === "active"], ["waiting", "Ждут ответа", isWaiting],
   ["new", "Потенциальные", d => d.status === "Потенциальные"], ["paused", "Пауза", d => d.g === "paused"],
   ["won", "Договоры", d => d.g === "won"], ["lost", "Отказ и архив", d => d.g === "lost"], ["all", "Все", () => true]];
 function renderChips() {
@@ -334,7 +391,7 @@ function renderLedger() {
   if (!ds.length) { tb.append(h("tr", null, h("td", { colspan: "6", class: "muted" }, "Ничего не найдено. Сбросьте поиск или выберите другой фильтр."))); return; }
   ds.forEach(d => {
     const name = h("td", null, h("a", { class: "co", href: d.url, target: "_blank", rel: "noopener" }, d.name, icon("external")));
-    if (d.waiting && d.g !== "lost" && d.g !== "won") name.append(h("span", { class: "flag" }, "ждёт ответа"));
+    if (isWaiting(d)) name.append(h("span", { class: "flag" }, "ждёт ответа"));
     if (d.meeting && d.meeting >= S.today && !d.held) name.append(h("span", { class: "sub-cell" }, "встреча " + dLong(d.meeting)));
     const active = d.g === "active";
     const next = h("td", { class: "next" }, d.g === "lost" ? (d.reason || "—") : (d.next || "—"));
@@ -396,7 +453,7 @@ function renderFresh() {
 }
 
 function renderAll() {
-  renderFresh(); renderHero(); renderSignals(); renderWorks();
+  renderFresh(); renderHero(); renderReply(); renderSignals(); renderWorks();
   segTable("#sectors", "sector", true, "Отрасль не указана"); segTable("#regions", "region", false, "Регион не указан");
   renderReasons(); renderChips(); renderLedger(); renderBase();
 }

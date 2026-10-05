@@ -36,7 +36,7 @@
     <label class="check" for="remember"><input id="remember" type="checkbox" checked> Запомнить на этом устройстве</label>
     <button class="btn primary" type="submit" id="gateBtn">Открыть дашборд</button>
     <p class="gate-err" id="gateErr" role="alert"></p>
-    <p class="gate-foot">Данные обновляются каждый день в 19:00 по Ташкенту из Notion CRM.</p>
+    <p class="gate-foot">Данные обновляются каждый день около 19:30 по Ташкенту из Notion CRM.</p>
   </form>
 </div>
 
@@ -59,7 +59,7 @@
         <button class="btn" type="button" id="logout">Выйти</button>
       </div>
       <nav class="nav" aria-label="Разделы">
-        <a href="#today">Сегодня</a><a href="#works">Что работает</a><a href="#segments">Отрасли и регионы</a>
+        <a href="#reply">Ждут ответа</a><a href="#today">Сегодня</a><a href="#works">Что работает</a><a href="#segments">Отрасли и регионы</a>
         <a href="#reasons">Отказы и запросы</a><a href="#deals">Сделки</a><a href="#base">База</a>
       </nav>
     </div>
@@ -87,6 +87,7 @@
         <h2 class="h2">Что сделать в первую очередь</h2>
         <p class="lead">Списки собираются из CRM сами: кто ждёт ответа, что ближе всего к деньгам и где сделка остановилась.</p>
       </div>
+      <article class="glass pad reply" id="reply" aria-labelledby="replyTitle"></article>
       <div class="grid sig-grid" id="signals"></div>
     </section>
 
@@ -180,10 +181,10 @@
   <footer class="final">
     <i class="aura n1" aria-hidden="true"></i><i class="aura n2" aria-hidden="true"></i>
     <div class="wrap">
-      <div style="display:grid;gap:12px"><span class="eyebrow">Как это работает</span><h2 class="h2">Каждый день в 19:00 цифры обновляются сами</h2></div>
+      <div style="display:grid;gap:12px"><span class="eyebrow">Как это работает</span><h2 class="h2">Каждый вечер цифры обновляются сами</h2></div>
       <ol class="chain">
-        <li><span class="no">1</span><b>Telegram → Notion</b><span class="when">ежедневно в 18:12</span><p>Claude читает переписку @ceo_w2w: заводит в CRM новые лиды, двигает статусы, пишет историю и следующий шаг. Сообщения клиентам он не отправляет.</p></li>
-        <li><span class="no">2</span><b>Notion → дашборд</b><span class="when">ежедневно около 19:00</span><p>GitHub забирает базу CRM, шифрует данные паролем и публикует страницу. Ручные правки в Notion тоже попадают сюда.</p></li>
+        <li><span class="no">1</span><b>Telegram → Notion</b><span class="when">ежедневно в 19:00</span><p>Claude читает переписку @ceo_w2w: заводит в CRM новые лиды, двигает статусы, пишет историю и следующий шаг, отмечает, кто ждёт нашего ответа. Сообщения клиентам он не отправляет.</p></li>
+        <li><span class="no">2</span><b>Notion → дашборд</b><span class="when">ежедневно около 19:30</span><p>GitHub забирает базу CRM, шифрует данные паролем и публикует страницу. Ручные правки в Notion тоже попадают сюда.</p></li>
         <li><span class="no">3</span><b>Дашборд → решения</b><span class="when" id="chainWhen">сейчас</span><p>Воронка, сигналы «на сегодня» и сравнения пересчитываются в браузере из свежих данных.</p></li>
       </ol>
       <div class="method">

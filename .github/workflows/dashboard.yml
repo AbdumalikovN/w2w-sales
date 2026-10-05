@@ -2,7 +2,7 @@ name: Обновить дашборд
 
 on:
   schedule:
-    - cron: "55 13 * * *"  # 18:55 по Ташкенту (UTC+5); GitHub обычно запускает с задержкой в несколько минут
+    - cron: "30 14 * * *"  # 19:30 по Ташкенту, после сверки Telegram → Notion в 19:00 (UTC+5); GitHub обычно запускает с задержкой в несколько минут
   workflow_dispatch:        # кнопка Run workflow во вкладке Actions
   push:
     branches: [main]

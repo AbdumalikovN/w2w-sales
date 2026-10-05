@@ -224,6 +224,45 @@ section { scroll-margin-top: 120px; }
 .card-h .count { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .card-sub { font-size: 13px; color: var(--label-2); margin: -6px 0 12px; }
 
+/* ждут нашего ответа — список на конец дня */
+.now a.pill { text-decoration: none; transition: background .15s; } .now a.pill:hover { background: rgba(255, 255, 255, 0.16); }
+.reply { margin-bottom: 16px; display: grid; gap: 14px; }
+.reply-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.reply-h .card-sub { margin: 4px 0 0; max-width: 70ch; }
+.reply-h .count { font-size: 34px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--label-3); }
+.reply-h .count.hot { color: var(--danger-ink); }
+.reply-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.reply-bar .pill { background: var(--fill); color: var(--label-2); font-weight: 500; }
+.reply-bar .pill b { font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.reply-bar .pill.bad b { color: var(--danger-ink); } .reply-bar .pill.warn b { color: var(--warn-ink); }
+.reply-bar .sp { flex: 1; }
+.reply .btn.copy { height: 34px; font-size: 13px; }
+.reply .btn.copy .ico, .reply .btn.chat .ico { width: 16px; height: 16px; }
+.reply-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.reply-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) 92px auto; gap: 6px 18px; align-items: center; padding: 14px 0; border-top: 0.5px solid var(--sep); }
+.reply-list li:first-child { border-top: 0; padding-top: 4px; }
+.reply-list .who { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.reply-list .who .nm { font-weight: 700; font-size: 15px; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.reply-list .who a.nm:hover { color: var(--brand-ink); }
+.reply-list .who .meta { flex-basis: 100%; font-size: 12.5px; color: var(--label-2); }
+.reply-list .what { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-soft); min-width: 0; }
+.reply-list .idle { justify-self: start; }
+.idle.new { background: rgba(var(--brand-rgb), 0.14); color: var(--brand-ink); }
+.reply .btn.chat { height: 34px; font-size: 13px; text-decoration: none; color: var(--brand-ink); background: rgba(var(--brand-rgb), 0.12); white-space: nowrap; }
+.reply .btn.chat:hover { background: rgba(var(--brand-rgb), 0.2); }
+.reply .chat.none { font-size: 12px; color: var(--label-3); }
+.reply .empty { font-size: 14px; color: var(--label-2); padding: 14px 16px; border-radius: var(--r-sm); background: var(--fill); display: flex; gap: 10px; align-items: center; margin: 0; }
+.reply .empty .ico { color: var(--green-deep); width: 18px; height: 18px; flex: none; }
+.reply .foot { margin: 0; }
+.copy-fallback { width: 100%; min-height: 120px; font: 13px/1.5 var(--font); border-radius: var(--r-sm); border: 0.5px solid var(--sep); padding: 10px; background: var(--paper); color: var(--ink); }
+@media (max-width: 860px) {
+  .reply-list li { grid-template-columns: minmax(0, 1fr) auto; }
+  .reply-list .what { grid-column: 1 / -1; grid-row: 2; }
+  .reply-list .idle { grid-column: 2; grid-row: 1; justify-self: end; }
+  .reply-list .chat { grid-column: 1 / -1; grid-row: 3; justify-self: start; }
+}
+@media (max-width: 520px) { .reply-h { grid-template-columns: auto minmax(0, 1fr); } .reply-h .count { grid-column: 2; grid-row: 1; justify-self: end; } .reply-h .reply-t { grid-column: 1 / -1; } .reply-bar .sp { display: none; } }
+
 /* сигналы */
 .sig { display: flex; flex-direction: column; }
 .sig .rows { list-style: none; margin: 0; padding: 0; display: grid; }
