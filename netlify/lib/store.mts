@@ -14,22 +14,25 @@ export interface KV {
 
 let current: KV | null = null;
 
+/** Тесты и локальный сервер подменяют хранилище; в продакшене — Netlify Blobs. */
 export function setKV(kv: KV) {
   current = kv;
 }
 
 export async function kv(): Promise<KV> {
-  if (current) return current;
-  current = await blobsKV();
-  return current;
+  return current || blobsKV();
 }
 
+// Подключение к Blobs создаётся на каждую операцию: токен доступа выдаётся на конкретный вызов функции
+// и истекает, а «тёплый» экземпляр функции живёт дольше. Закешированный getStore() через ~час
+// начинает падать с «Failed to decode token: Token expired».
+let blobs: typeof import("@netlify/blobs") | null = null;
 async function blobsKV(): Promise<KV> {
-  const { getStore } = await import("@netlify/blobs");
-  const store = getStore({ name: "crm", consistency: "strong" });
+  blobs ||= await import("@netlify/blobs");
+  const store = () => blobs!.getStore({ name: "crm", consistency: "strong" });
   return {
     async get(key) {
-      const r = await store.getWithMetadata(key, { type: "json", consistency: "strong" });
+      const r = await store().getWithMetadata(key, { type: "json", consistency: "strong" });
       if (!r || r.data == null) return null;
       return { data: r.data, etag: r.etag || "" };
     },
@@ -37,15 +40,15 @@ async function blobsKV(): Promise<KV> {
       const o: Record<string, unknown> = {};
       if (opts.onlyIfMatch) o.onlyIfMatch = opts.onlyIfMatch;
       if (opts.onlyIfNew) o.onlyIfNew = true;
-      const r: any = await store.setJSON(key, value, o);
+      const r: any = await store().setJSON(key, value, o);
       return { modified: r?.modified !== false, etag: r?.etag };
     },
     async del(key) {
-      await store.delete(key);
+      await store().delete(key);
     },
     async list(prefix) {
-      const { blobs } = await store.list({ prefix });
-      return blobs.map((b: { key: string }) => b.key);
+      const { blobs: items } = await store().list({ prefix });
+      return items.map((b: { key: string }) => b.key);
     },
   };
 }
