@@ -258,7 +258,7 @@ function userMenu(anchor) {
   );
 }
 
-async function logout() {
+export async function logout() {
   try {
     await post("/auth/logout");
   } catch {}

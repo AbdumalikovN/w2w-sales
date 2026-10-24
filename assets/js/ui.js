@@ -139,7 +139,7 @@ export function pick(anchor, options, current, onPick, opts = {}) {
 }
 
 // ---------- модальные окна ----------
-export function modal({ title, body, footer, wide = false, onClose, className = "" }) {
+export function modal({ title, body, footer, wide = false, onClose, className = "", dismissable = true }) {
   const wrap = h("div", { class: "modal-wrap", role: "dialog", "aria-modal": "true" });
   const box = h("div", { class: `modal ${wide ? "wide" : ""} ${className}` });
   const close = () => {
@@ -149,15 +149,15 @@ export function modal({ title, body, footer, wide = false, onClose, className = 
     prevFocus?.focus?.();
   };
   const prevFocus = document.activeElement;
-  if (title) box.append(h("div", { class: "modal-h" }, h("h2", null, title), h("button", { class: "btn icon sm", type: "button", "aria-label": "Закрыть", onclick: close }, icon("close"))));
+  if (title) box.append(h("div", { class: "modal-h" }, h("h2", null, title), dismissable ? h("button", { class: "btn icon sm", type: "button", "aria-label": "Закрыть", onclick: close }, icon("close")) : null));
   if (body) box.append(body);
   if (footer) box.append(h("div", { class: "modal-f" }, footer));
   wrap.append(box);
   wrap.addEventListener("pointerdown", (e) => {
-    if (e.target === wrap) close();
+    if (dismissable && e.target === wrap) close();
   });
   const onKey = (e) => {
-    if (e.key === "Escape" && !document.querySelector(".pop")) close();
+    if (dismissable && e.key === "Escape" && !document.querySelector(".pop")) close();
   };
   document.addEventListener("keydown", onKey);
   document.body.append(wrap);

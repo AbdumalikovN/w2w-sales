@@ -387,7 +387,14 @@ export function passwordModal({ forced = false } = {}) {
   const m = modal({
     title: forced ? "Задайте свой пароль" : "Смена пароля",
     body: h("div", { style: { display: "grid", gap: "12px" } }, forced ? h("p", { class: "lead" }, "Вы вошли по временному паролю. Придумайте свой — не короче 8 символов.") : null, field(forced ? "Временный пароль" : "Текущий пароль", cur), field("Новый пароль", nw), field("Повторите новый пароль", nw2), err),
-    footer: [forced ? null : h("button", { class: "btn", type: "button", onclick: () => m.close() }, "Отмена"), btn],
+    footer: [
+      forced
+        ? h("button", { class: "btn", type: "button", onclick: async () => (m.close(), (await import("../main.js")).logout()) }, "Выйти")
+        : h("button", { class: "btn", type: "button", onclick: () => m.close() }, "Отмена"),
+      btn,
+    ],
+    // временный пароль нужно сменить: окно не закрывается крестиком, кликом мимо или Esc
+    dismissable: !forced,
   });
   btn.addEventListener("click", async () => {
     err.textContent = "";
