@@ -1,5 +1,12 @@
+# сборка и локальные данные
 _site/
+index.html
+node_modules/
+dev/.data/
+.netlify/
 __pycache__/
 *.pyc
 .DS_Store
+# выгрузки клиентов из Notion — в репозиторий не кладём
 *.plain.json
+migration/

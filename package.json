@@ -1,0 +1,17 @@
+{
+  "name": "w2w-crm",
+  "private": true,
+  "type": "module",
+  "description": "CRM Win to Win: воронка продаж, карточки клиентов, проекты в работе и аналитика",
+  "scripts": {
+    "test": "node --test tests/*.test.mts",
+    "dev": "node scripts/stamp.mjs && node dev/server.mjs",
+    "build": "node scripts/stamp.mjs --out _site"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.6"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^6.0.3"
+  }
+}

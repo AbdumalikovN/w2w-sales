@@ -1,0 +1,9 @@
+{
+  "name": "W2W CRM",
+  "short_name": "W2W CRM",
+  "start_url": "./#/today",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#0abcf3",
+  "icons": [{ "src": "assets/img/w2w-app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

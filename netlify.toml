@@ -1,0 +1,37 @@
+# W2W CRM на Netlify.
+# Здесь работает только API: одна функция netlify/functions/api.mts (путь /api/*) + хранилище Netlify Blobs.
+# Интерфейс (index.html, assets/) публикуется на GitHub Pages и проксируется сюда правилами ниже —
+# так правки интерфейса не требуют деплоя Netlify и не тратят кредиты бесплатного тарифа.
+# Деплой Netlify нужен только при изменениях в netlify/ или в этом файле (см. README → «Деплой»).
+
+[build]
+  publish = "netlify/public"
+  command = ""
+
+[functions]
+  node_bundler = "esbuild"
+
+# Интерфейс CRM с GitHub Pages. Маршруты внутри приложения — через #, поэтому нужны только эти пути.
+[[redirects]]
+  from = "/"
+  to = "https://abdumalikovn.github.io/w2w-sales/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/index.html"
+  to = "https://abdumalikovn.github.io/w2w-sales/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/assets/*"
+  to = "https://abdumalikovn.github.io/w2w-sales/assets/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/manifest.webmanifest"
+  to = "https://abdumalikovn.github.io/w2w-sales/manifest.webmanifest"
+  status = 200
+  force = true
