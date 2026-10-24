@@ -1,0 +1,31 @@
+name: Разовая выгрузка базы анкет
+
+on:
+  push:
+    branches: [base-export]
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "cryptography>=42"
+      - name: Перешифровать базу анкет
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: python scripts/base_export.py
+      - name: Сохранить зашифрованный файл в ветку
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan base-export-data
+          git rm -rf --cached . >/dev/null
+          git add -f out/base-export.enc.json
+          git commit -m "Зашифрованная база анкет"
+          git push -f origin base-export-data
