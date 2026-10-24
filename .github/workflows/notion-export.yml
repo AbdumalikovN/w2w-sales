@@ -1,0 +1,31 @@
+name: Разовая выгрузка Notion CRM
+
+on:
+  push:
+    branches: [notion-export]
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "cryptography>=42"
+      - name: Выгрузить и зашифровать
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python scripts/notion_export.py
+      - name: Сохранить зашифрованный файл в ветку
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan notion-export-data
+          git rm -rf --cached . >/dev/null
+          git add -f out/notion-export.enc.json
+          git commit -m "Зашифрованная выгрузка Notion CRM"
+          git push -f origin notion-export-data
