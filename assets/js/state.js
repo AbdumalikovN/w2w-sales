@@ -36,7 +36,15 @@ export function emit(what = "all", ids = null) {
 export const statusOf = (id) => S.C?.statuses.find((s) => s.id === id) || { id, label: id || "—", group: "new", rank: 0 };
 export const stageOf = (id) => S.C?.devStages.find((s) => s.id === id) || null;
 export const userName = (id) => (id === "sync" ? "Синхронизация Telegram" : id === "import" ? "Перенос из Notion" : S.usersById.get(id)?.name || "");
-export const pipelineOf = (id) => S.settings?.pipelines.find((p) => p.id === id) || { id, label: id };
+/** «Все воронки» на доске: рабочие воронки вместе, без замороженного «Архива 2025». */
+export const ALL_PIPES = "all";
+export const pipelineOf = (id) => (id === ALL_PIPES ? { id, label: "Все воронки" } : S.settings?.pipelines.find((p) => p.id === id) || { id, label: id });
+/** Сделка видна в выбранной воронке (или во «Всех воронках»). */
+export const inPipeline = (d, pipeline) => (pipeline === ALL_PIPES ? d.pipeline !== "archive" : d.pipeline === pipeline);
+/** Воронка по умолчанию для новой сделки, если выбраны «Все воронки». */
+export const defaultPipeline = () => S.settings?.pipelines.find((p) => p.id !== "archive")?.id || "sales";
+const PIPE_COLORS = ["#0abcf3", "#ff9f43", "#07e7b7", "#9a9aa2", "#7a6cff", "#ff6b9a"];
+export const pipeColor = (id) => PIPE_COLORS[Math.max(0, S.settings?.pipelines.findIndex((p) => p.id === id) ?? 0) % PIPE_COLORS.length];
 export const can = (lvl) => {
   const r = S.me?.role;
   if (lvl === "admin") return r === "admin";
@@ -88,14 +96,14 @@ export async function bootstrap() {
   S.lastSync = b.lastSync;
   S.today = todayTash();
   S.deals = new Map(b.deals.map((d) => [d.id, enrich(d)]));
-  if (!S.settings.pipelines.some((p) => p.id === S.ui.pipeline)) S.ui.pipeline = S.settings.pipelines[0]?.id || "sales";
+  if (S.ui.pipeline !== ALL_PIPES && !S.settings.pipelines.some((p) => p.id === S.ui.pipeline)) S.ui.pipeline = S.settings.pipelines[0]?.id || "sales";
   S.loaded = true;
   emit("all");
 }
 
 export function dealsIn(pipeline = S.ui.pipeline) {
   const out = [];
-  for (const d of S.deals.values()) if (!pipeline || d.pipeline === pipeline) out.push(d);
+  for (const d of S.deals.values()) if (!pipeline || inPipeline(d, pipeline)) out.push(d);
   return out;
 }
 export function allDeals() {

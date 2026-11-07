@@ -1,6 +1,6 @@
 /* «Воронка»: канбан по статусам с перетаскиванием карточек. */
 import { h, icon, clear, money, meetingLabel, dShort, dFull, store, lc } from "../core.js";
-import { S, can, updateDeal, statusOf, pipelineOf, userName } from "../state.js";
+import { S, can, updateDeal, statusOf, pipelineOf, userName, inPipeline, pipeColor, ALL_PIPES } from "../state.js";
 import { avatar, idlePill, toast, errToast, pick, seg } from "../ui.js";
 import { matchQuery } from "../logic.js";
 
@@ -41,7 +41,7 @@ function filtered() {
   const q = F.q.trim();
   return [...S.deals.values()].filter(
     (d) =>
-      d.pipeline === S.ui.pipeline &&
+      inPipeline(d, S.ui.pipeline) &&
       (!q || matchQuery(d, q)) &&
       (!F.owner || (F.owner === "me" ? d.owner === S.me.id : d.owner === F.owner)) &&
       (!F.source || d.source === F.source) &&
@@ -94,7 +94,7 @@ function drawTop(keepSearch) {
       "div",
       { class: "acts" },
       seg(
-        S.settings.pipelines.map((x) => ({ value: x.id, label: x.label })),
+        [{ value: ALL_PIPES, label: "Все воронки" }, ...S.settings.pipelines.map((x) => ({ value: x.id, label: x.label }))],
         S.ui.pipeline,
         async (v) => {
           S.ui.pipeline = v;
@@ -212,7 +212,9 @@ function drawBoard() {
       { class: "foot" },
       S.ui.pipeline === "archive"
         ? "«Архив 2025» — карточки старой CRM из Notion, сохранены как история. Счётчики «без движения» и напоминания здесь выключены, в «Сегодня» и «Проекты в работе» архив не попадает. Чтобы вернуть клиента в работу, откройте карточку → «⋯» → «Перенести в воронку»."
-        : "Перетащите карточку в другую колонку, чтобы сменить статус. На телефоне — удерживайте карточку полсекунды. Договоры уходят в «Проекты в работе». Цвет полоски дней: зелёный — до 3 дней без движения, жёлтый — 4–7, красный — больше недели.",
+        : S.ui.pipeline === ALL_PIPES
+          ? "«Все воронки» — сделки всех рабочих воронок на одной доске, на карточке подписано, из какой она воронки. «Архив 2025» сюда не входит — он открывается своей вкладкой. Перетащите карточку в другую колонку, чтобы сменить статус; воронка при этом не меняется."
+          : "Перетащите карточку в другую колонку, чтобы сменить статус. На телефоне — удерживайте карточку полсекунды. Договоры уходят в «Проекты в работе». Цвет полоски дней: зелёный — до 3 дней без движения, жёлтый — 4–7, красный — больше недели.",
     ),
   );
 }
@@ -229,6 +231,7 @@ function card(d) {
   const el = h(
     "button",
     { class: "dcard" + (d._.waiting ? " is-waiting" : ""), type: "button", "data-id": d.id, "aria-label": d.name },
+    S.ui.pipeline === ALL_PIPES ? h("div", { class: "pp", style: { "--c": pipeColor(d.pipeline) } }, pipelineOf(d.pipeline).label) : null,
     h("div", { class: "t" }, d.priority ? h("span", { class: "prio " + d.priority, title: "Приоритет" }) : null, h("b", null, d.name), d._.waiting ? h("span", { class: "flag" }, "ждёт") : null),
     d.contactName || d.region || d.sector ? h("div", { class: "who" }, [d.contactName, d.sector, d.region].filter(Boolean).join(" · ")) : null,
     d.nextStep ? h("div", { class: "nx" + (d._.due ? " due" : "") }, h("span", null, d.nextStep)) : null,

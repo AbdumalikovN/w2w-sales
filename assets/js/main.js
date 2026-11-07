@@ -1,7 +1,7 @@
 /* Точка входа: вход, каркас приложения, маршрутизация. */
 import { h, icon, clear, $, store, followLight, initials, timeAgo, svgMark } from "./core.js";
 import { get, post, setUnauthorizedHandler, ApiError } from "./api.js";
-import { S, bootstrap, subscribe, startPolling, stopPolling, can, dealsIn, allDeals } from "./state.js";
+import { S, bootstrap, subscribe, startPolling, stopPolling, can, dealsIn, allDeals, pipeColor, ALL_PIPES } from "./state.js";
 import { toast, popover, modal, busy, errToast, closePop } from "./ui.js";
 import { openDeal, closeDeal, currentDealId } from "./deal.js";
 import { openPalette } from "./palette.js";
@@ -17,8 +17,6 @@ const VIEWS = {
   base: { title: "База курса", icon: "people", tone: "ic-7", load: () => import("./views/base.js") },
   settings: { title: "Настройки", icon: "shield", tone: "ic-6", load: () => import("./views/settings.js"), admin: true },
 };
-const PIPE_COLORS = ["#0abcf3", "#ff9f43", "#07e7b7", "#9a9aa2", "#7a6cff", "#ff6b9a"];
-export const pipeColor = (id) => PIPE_COLORS[Math.max(0, S.settings?.pipelines.findIndex((p) => p.id === id) ?? 0) % PIPE_COLORS.length];
 
 const root = $("#root");
 let current = { name: null, view: null, unmount: null };
@@ -158,8 +156,13 @@ export function drawChrome() {
   sb.append(nav, h("div", { class: "side-sec" }, "Воронки"));
   const pipes = h("div", { class: "pipes" });
   const counts = {};
-  for (const d of S.deals.values()) counts[d.pipeline] = (counts[d.pipeline] || 0) + 1;
-  for (const p of S.settings.pipelines) {
+  for (const d of S.deals.values()) {
+    counts[d.pipeline] = (counts[d.pipeline] || 0) + 1;
+    if (d.pipeline !== "archive") counts[ALL_PIPES] = (counts[ALL_PIPES] || 0) + 1;
+  }
+  const work = S.settings.pipelines.filter((p) => p.id !== "archive");
+  const allItem = { id: ALL_PIPES, label: "Все воронки", dot: { "--c": "var(--brand)", background: `conic-gradient(${work.map((p, i) => `${pipeColor(p.id)} ${(i / work.length) * 360}deg ${((i + 1) / work.length) * 360}deg`).join(", ")})` } };
+  for (const p of [allItem, ...S.settings.pipelines]) {
     pipes.append(
       h(
         "button",
@@ -175,7 +178,7 @@ export function drawChrome() {
             drawChrome();
           },
         },
-        h("i", { style: { "--c": pipeColor(p.id) } }),
+        h("i", { style: p.dot || { "--c": pipeColor(p.id) } }),
         p.label,
         h("span", { class: "n" }, String(counts[p.id] || 0)),
       ),

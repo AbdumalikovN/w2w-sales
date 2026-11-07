@@ -1,10 +1,10 @@
 /* Новая сделка: короткая форма, остальное — уже в карточке. */
 import { h, icon, todayTash, tgUsername, lc } from "./core.js";
-import { S, createDeal } from "./state.js";
+import { S, createDeal, ALL_PIPES, defaultPipeline } from "./state.js";
 import { modal, busy, errToast, toast } from "./ui.js";
 
 export function newDealModal(preset = {}) {
-  const pipeline = preset.pipeline || S.ui.pipeline || "sales";
+  const pipeline = [preset.pipeline, S.ui.pipeline].find((p) => p && p !== ALL_PIPES) || defaultPipeline();
   const f = (label, el, cls = "") => h("div", { class: "field " + cls }, h("label", null, label), el);
   const name = h("input", { class: "input", placeholder: "Компания или бренд", required: true });
   const contact = h("input", { class: "input", placeholder: "Имя Фамилия" });
